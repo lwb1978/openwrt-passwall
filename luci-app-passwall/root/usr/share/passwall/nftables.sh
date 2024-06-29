@@ -258,6 +258,8 @@ load_acl() {
 				use_block_list=${USE_BLOCK_LIST}
 				use_gfw_list=${USE_GFW_LIST}
 				chn_list=${CHN_LIST}
+				tcp_proxy_mode=${TCP_PROXY_MODE}
+				udp_proxy_mode=${UDP_PROXY_MODE}
 			}
 
 			for i in $(cat ${TMP_ACL_PATH}/${sid}/rule_list); do
@@ -1236,7 +1238,6 @@ flush_nftset_reload() {
 	del_firewall_rule
 	flush_nftset
 	rm -rf /tmp/singbox_passwall*
-	rm -rf /tmp/etc/passwall_tmp/smartdns*
 	rm -rf /tmp/etc/passwall_tmp/dnsmasq*
 	/etc/init.d/passwall reload
 }
