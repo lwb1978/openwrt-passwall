@@ -1239,6 +1239,7 @@ flush_nftset_reload() {
 	flush_nftset
 	rm -rf /tmp/singbox_passwall*
 	rm -rf /tmp/etc/passwall_tmp/dnsmasq*
+ 	rm -rf /tmp/etc/passwall_tmp/smartdns*
 	/etc/init.d/passwall reload
 }
 
