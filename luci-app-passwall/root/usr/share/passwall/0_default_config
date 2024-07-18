@@ -9,6 +9,7 @@ config global
 	option dns_shunt 'chinadns-ng'
 	option dns_mode 'tcp'
 	option remote_dns '1.1.1.1'
+	list smartdns_remote_dns 'https://1.1.1.1/dns-query'
 	option use_default_dns 'direct'
 	option chinadns_ng_default_tag 'none'
 	option use_direct_list '1'
@@ -32,7 +33,7 @@ config global_haproxy
 config global_delay
 	option auto_on '0'
 	option start_daemon '1'
-	option start_delay '60'
+	option start_delay '15'
 
 config global_forwarding
 	option tcp_no_redir_ports 'disable'
