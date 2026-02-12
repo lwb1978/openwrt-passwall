@@ -460,6 +460,13 @@ function gen_config_server(node)
 				clients = clients
 			}
 		end
+	elseif node.protocol == "hysteria2" then
+		settings = {
+			version = 2,
+			clients = node.hysteria2_auth_password and {
+				{ auth = node.hysteria2_auth_password }
+			}
+		}
 	elseif node.protocol == "dokodemo-door" then
 		settings = {
 			network = node.d_protocol,
@@ -537,6 +544,12 @@ function gen_config_server(node)
 		end
 	end
 
+	if node.protocol == "hysteria2" then
+		node.protocol = "hysteria"
+		node.transport = "hysteria"
+		node.tls = "1"
+	end
+
 	local config = {
 		log = {
 			-- error = "/tmp/etc/passwall_server/log/" .. user[".name"] .. ".log",
@@ -605,6 +618,9 @@ function gen_config_server(node)
 						maxUploadSize = node.xhttp_maxuploadsize,
 						maxConcurrentUploads = node.xhttp_maxconcurrentuploads
 					} or nil,
+					hysteriaSettings = (node.transport == "hysteria") and {
+						version = 2
+					} or nil,
 					finalmask = (node.transport == "mkcp") and {
 						udp = (function()
 							local t = {}
@@ -624,6 +640,13 @@ function gen_config_server(node)
 							t[#t + 1] = c
 							return t
 						end)()
+					} or (node.transport == "hysteria" and node.hysteria2_obfs_password and node.hysteria2_obfs_password ~= "") and {
+						udp = {
+							{
+								type = "salamander",
+								settings = { password = node.hysteria2_obfs_password }
+							}
+						}
 					} or nil,
 					sockopt = {
 						tcpFastOpen = (node.tcp_fast_open == "1") and true or nil,
