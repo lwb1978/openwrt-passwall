@@ -640,11 +640,13 @@ function gen_config_server(node)
 							t[#t + 1] = c
 							return t
 						end)()
-					} or (node.transport == "hysteria" and node.hysteria2_obfs_password and node.hysteria2_obfs_password ~= "") and {
+					} or (node.transport == "hysteria" and node.hysteria2_obfs_type and node.hysteria2_obfs_type ~= "") and {
 						udp = {
 							{
-								type = "salamander",
-								settings = { password = node.hysteria2_obfs_password }
+								type = node.hysteria2_obfs_type,
+								settings = node.hysteria2_obfs_password and {
+									password = node.hysteria2_obfs_password
+								} or nil
 							}
 						}
 					} or nil,
