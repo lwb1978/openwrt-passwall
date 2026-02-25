@@ -621,35 +621,55 @@ function gen_config_server(node)
 					hysteriaSettings = (node.transport == "hysteria") and {
 						version = 2
 					} or nil,
-					finalmask = (node.transport == "mkcp") and {
-						udp = (function()
-							local t = {}
+					finalmask = (function()
+						local finalmask
+						if node.transport == "mkcp" then
 							local map = {none = "none", srtp = "header-srtp", utp = "header-utp", ["wechat-video"] = "header-wechat",
 								dtls = "header-dtls", wireguard = "header-wireguard", dns = "header-dns"}
+							local udp = {}
 							if node.mkcp_guise and node.mkcp_guise ~= "none" then
 								local g = { type = map[node.mkcp_guise] }
 								if node.mkcp_guise == "dns" and node.mkcp_domain and node.mkcp_domain ~= "" then
 									g.settings = { domain = node.mkcp_domain }
 								end
-								t[#t + 1] = g
+								udp[#udp+1] = g
 							end
 							local c = { type = (node.mkcp_seed and node.mkcp_seed ~= "") and "mkcp-aes128gcm" or "mkcp-original" }
 							if node.mkcp_seed and node.mkcp_seed ~= "" then
 								c.settings = { password = node.mkcp_seed }
 							end
-							t[#t + 1] = c
-							return t
-						end)()
-					} or (node.transport == "hysteria" and node.hysteria2_obfs_type and node.hysteria2_obfs_type ~= "") and {
-						udp = {
-							{
-								type = node.hysteria2_obfs_type,
-								settings = node.hysteria2_obfs_password and {
-									password = node.hysteria2_obfs_password
-								} or nil
+							udp[#udp+1] = c
+							finalmask = { udp = udp }
+						elseif node.transport == "hysteria" and node.hysteria2_obfs_type and node.hysteria2_obfs_type ~= "" then
+							finalmask = {
+								udp = {{
+									type = node.hysteria2_obfs_type,
+									settings = node.hysteria2_obfs_password and {
+										password = node.hysteria2_obfs_password
+									} or nil
+								}}
 							}
-						}
-					} or nil,
+						end
+						if node.finalmask and node.finalmask ~= "" then
+							local ok, fm = pcall(jsonc.parse, api.base64Decode(node.finalmask))
+							if ok and type(fm) == "table" then
+								if not finalmask or not next(finalmask) then
+									finalmask = fm
+								else
+									if type(fm.udp) == "table" then
+										finalmask.udp = finalmask.udp or {}
+										for i = 1, #fm.udp do
+											finalmask.udp[#finalmask.udp+1] = fm.udp[i]
+										end
+									end
+									if type(fm.tcp) == "table" then
+										finalmask.tcp = fm.tcp
+									end
+								end
+							end
+						end
+						return (finalmask and next(finalmask)) and finalmask or nil
+					end)(),
 					sockopt = {
 						tcpFastOpen = (node.tcp_fast_open == "1") and true or nil,
 						acceptProxyProtocol = (node.acceptProxyProtocol and node.acceptProxyProtocol == "1") and true or false
