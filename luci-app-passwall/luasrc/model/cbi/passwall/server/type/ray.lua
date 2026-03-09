@@ -128,6 +128,16 @@ o:value("xtls-rprx-vision")
 o:depends({ [_n("protocol")] = "vless" })
 
 ---- [[hysteria2]]
+o = s:option(Flag, _n("hysteria2_ignore_client_bandwidth"), translate("Client BBR Flow Control"))
+o.default = 0
+o:depends({ [_n("protocol")] = "hysteria2" })
+
+o = s:option(Value, _n("hysteria2_up_mbps"), translate("Max upload Mbps"))
+o:depends({ [_n("protocol")] = "hysteria2", [_n("hysteria2_ignore_client_bandwidth")] = false })
+
+o = s:option(Value, _n("hysteria2_down_mbps"), translate("Max download Mbps"))
+o:depends({ [_n("protocol")] = "hysteria2", [_n("hysteria2_ignore_client_bandwidth")] = false })
+
 o = s:option(ListValue, _n("hysteria2_obfs_type"), translate("Obfs Type"))
 o:value("", translate("Disable"))
 o:value("salamander")

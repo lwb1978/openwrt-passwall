@@ -640,15 +640,26 @@ function gen_config_server(node)
 							end
 							udp[#udp+1] = c
 							finalmask = { udp = udp }
-						elseif node.transport == "hysteria" and node.hysteria2_obfs_type and node.hysteria2_obfs_type ~= "" then
-							finalmask = {
-								udp = {{
+						elseif node.transport == "hysteria" then
+							finalmask = finalmask or {}
+							if node.hysteria2_obfs_type and node.hysteria2_obfs_type ~= "" then
+								finalmask.udp = {{
 									type = node.hysteria2_obfs_type,
 									settings = node.hysteria2_obfs_password and {
 										password = node.hysteria2_obfs_password
 									} or nil
 								}}
-							}
+							end
+							finalmask.quicParams = finalmask.quicParams or {}
+							if node.hysteria2_ignore_client_bandwidth == "1" then
+								finalmask.quicParams.congestion = "bbr"
+							else
+								local up_mbps = (node.hysteria2_up_mbps and tonumber(node.hysteria2_up_mbps) or 0) > 0  and tonumber(node.hysteria2_up_mbps) or nil
+								local down_mbps = (node.hysteria2_down_mbps and tonumber(node.hysteria2_down_mbps) or 0) > 0 and tonumber(node.hysteria2_down_mbps) or nil
+								finalmask.quicParams.congestion = (up_mbps and down_mbps) and "brutal" or nil
+								finalmask.quicParams.brutalUp = up_mbps and up_mbps .. "mbps" or nil
+								finalmask.quicParams.brutalDown = down_mbps and down_mbps .. "mbps" or nil
+							end
 						end
 						if node.finalmask and node.finalmask ~= "" then
 							local ok, fm = pcall(jsonc.parse, api.base64Decode(node.finalmask))
@@ -664,6 +675,9 @@ function gen_config_server(node)
 									end
 									if type(fm.tcp) == "table" then
 										finalmask.tcp = fm.tcp
+									end
+									if type(fm.quicParams) == "table" then
+										finalmask.quicParams = fm.quicParams
 									end
 								end
 							end
