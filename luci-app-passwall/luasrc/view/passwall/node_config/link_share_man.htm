@@ -11,21 +11,11 @@ local has_singbox = api.finded_com("sing-box")
 local has_xray = api.finded_com("xray")
 local has_hysteria2 = api.finded_com("hysteria")
 
-local function get_core(field, candidates)
-	local v = map:get("@global_subscribe[0]", field)
-	if not v or v == "" then
-		for _, c in ipairs(candidates) do
-			if c[1] then return c[2] end
-		end
-	end
-	return v
-end
-
-local ss_type = get_core("ss_type", {{has_ss,"shadowsocks-libev"},{has_ss_rust,"shadowsocks-rust"},{has_singbox,"sing-box"},{has_xray,"xray"}})
-local trojan_type = get_core("trojan_type", {{has_trojan_plus,"trojan-plus"},{has_singbox,"sing-box"},{has_xray,"xray"}})
-local vmess_type = get_core("vmess_type", {{has_xray,"xray"},{has_singbox,"sing-box"}})
-local vless_type = get_core("vless_type", {{has_xray,"xray"},{has_singbox,"sing-box"}})
-local hysteria2_type = get_core("hysteria2_type", {{has_hysteria2,"hysteria2"},{has_singbox,"sing-box"}, {has_xray,"xray"}})
+local ss_type = api.get_core("ss_type", {{has_ss,"shadowsocks-libev"},{has_ss_rust,"shadowsocks-rust"},{has_singbox,"sing-box"},{has_xray,"xray"}})
+local trojan_type = api.get_core("trojan_type", {{has_trojan_plus,"trojan-plus"},{has_singbox,"sing-box"},{has_xray,"xray"}})
+local vmess_type = api.get_core("vmess_type", {{has_xray,"xray"},{has_singbox,"sing-box"}})
+local vless_type = api.get_core("vless_type", {{has_xray,"xray"},{has_singbox,"sing-box"}})
+local hysteria2_type = api.get_core("hysteria2_type", {{has_hysteria2,"hysteria2"},{has_singbox,"sing-box"}, {has_xray,"xray"}})
 
 local current_node = map:get(section)
 -%>
@@ -273,11 +263,11 @@ local current_node = map:get(section)
 						var ws_maxEarlyData = opt.get(dom_prefix + "ws_maxEarlyData").value;
 						params += "?ed=" + ws_maxEarlyData;
 					}
-				} else if (v_transport === "h2") {
-					v_transport = "http";
-					params += opt.query("host", dom_prefix + "h2_host");
-					params += opt.query("path", dom_prefix + "h2_path");
+				} else if (v_transport === "http") {
+					params += opt.query("host", dom_prefix + "http_host");
+					params += opt.query("path", dom_prefix + "http_path");
 				} else if (v_transport === "raw" || v_transport === "tcp") {
+					v_transport = "tcp";
 					params += opt.query("headerType", dom_prefix + "tcp_guise");
 					params += opt.query("host", dom_prefix + "tcp_guise_http_host");
 					params += opt.query("path", dom_prefix + "tcp_guise_http_path");
@@ -326,6 +316,9 @@ local current_node = map:get(section)
 				}
 
 				opt.get(dom_prefix + "uot")?.checked && (params += "&udp=1");
+				if (opt.get(dom_prefix + "use_finalmask")?.checked) {
+					params += opt.query("fm", dom_prefix + "finalmask");
+				}
 
 				if (opt.get(dom_prefix + "shadowtls")?.checked) {
 					let st_plugin_str = "";
@@ -392,10 +385,11 @@ local current_node = map:get(section)
 					var ws_maxEarlyData = opt.get(dom_prefix + "ws_maxEarlyData").value;
 					info.path = info.path + "?ed=" + ws_maxEarlyData;
 				}
-			} else if (v_transport === "h2") {
-				info.host = opt.get(dom_prefix + "h2_host").value;
-				info.path = opt.get(dom_prefix + "h2_path").value;
+			} else if (v_transport === "http") {
+				info.host = opt.get(dom_prefix + "http_host").value;
+				info.path = opt.get(dom_prefix + "http_path").value;
 			} else if (v_transport === "raw" || v_transport === "tcp") {
+				v_transport = "tcp";
 				info.type = opt.get(dom_prefix + "tcp_guise").value;
 				if (info.type === "http") {
 					info.host = opt.get(dom_prefix + "tcp_guise_http_host").value;
@@ -425,6 +419,10 @@ local current_node = map:get(section)
 			}
 
 			opt.get(dom_prefix + "tcp_fast_open")?.checked && (info.tfo = "1");
+			if (opt.get(dom_prefix + "use_finalmask")?.checked) {
+				info.fm = opt.get(dom_prefix + "finalmask").value;
+				if (info.fm) info.fm = encodeURI(info.fm);
+			}
 
 			url = b64EncodeUnicode(JSON.stringify(info));
 		} else if ((v_type === "sing-box" || v_type === "Xray") && opt.get(dom_prefix + "protocol").value === "vless") {
@@ -444,11 +442,11 @@ local current_node = map:get(section)
 					var ws_maxEarlyData = opt.get(dom_prefix + "ws_maxEarlyData").value;
 					params += encodeURIComponent("?ed=" + ws_maxEarlyData);
 				}
-			} else if (v_transport === "h2") {
-				v_transport = "http";
-				params += opt.query("host", dom_prefix + "h2_host");
-				params += opt.query("path", dom_prefix + "h2_path");
+			} else if (v_transport === "http") {
+				params += opt.query("host", dom_prefix + "http_host");
+				params += opt.query("path", dom_prefix + "http_path");
 			} else if (v_transport === "raw" || v_transport === "tcp") {
+				v_transport = "tcp";
 				params += opt.query("headerType", dom_prefix + "tcp_guise");
 				params += opt.query("host", dom_prefix + "tcp_guise_http_host");
 				params += opt.query("path", dom_prefix + "tcp_guise_http_path");
@@ -511,6 +509,9 @@ local current_node = map:get(section)
 			}
 
 			opt.get(dom_prefix + "tcp_fast_open")?.checked && (params += "&tfo=1");
+			if (opt.get(dom_prefix + "use_finalmask")?.checked) {
+				params += opt.query("fm", dom_prefix + "finalmask");
+			}
 
 			params += "#" + encodeURI(v_alias.value);
 			if (params[0] == "&") {
@@ -533,11 +534,11 @@ local current_node = map:get(section)
 					var ws_maxEarlyData = opt.get(dom_prefix + "ws_maxEarlyData").value;
 					params += "?ed=" + ws_maxEarlyData;
 				}
-			} else if (v_transport === "h2") {
-				v_transport = "http";
-				params += opt.query("host", dom_prefix + "h2_host");
-				params += opt.query("path", dom_prefix + "h2_path");
+			} else if (v_transport === "http") {
+				params += opt.query("host", dom_prefix + "http_host");
+				params += opt.query("path", dom_prefix + "http_path");
 			} else if (v_transport === "raw" || v_transport === "tcp") {
+				v_transport = "tcp";
 				params += opt.query("headerType", dom_prefix + "tcp_guise");
 				params += opt.query("host", dom_prefix + "tcp_guise_http_host");
 				params += opt.query("path", dom_prefix + "tcp_guise_http_path");
@@ -579,6 +580,9 @@ local current_node = map:get(section)
 			}
 
 			opt.get(dom_prefix + "tcp_fast_open")?.checked && (params += "&tfo=1");
+			if (opt.get(dom_prefix + "use_finalmask")?.checked) {
+				params += opt.query("fm", dom_prefix + "finalmask");
+			}
 
 			params += "#" + encodeURI(v_alias.value);
 			if (params[0] == "&") {
@@ -613,6 +617,9 @@ local current_node = map:get(section)
 					params += opt.query("obfs-password", dom_prefix + "hysteria2_obfs_password");
 				}
 				params += opt.query("mport", dom_prefix + "hysteria2_hop");
+				if (opt.get(dom_prefix + "use_finalmask")?.checked) {
+					params += opt.query("fm", dom_prefix + "finalmask");
+				}
 			}
 			params = params.replace(/^&/, "");
 			url =
@@ -635,6 +642,7 @@ local current_node = map:get(section)
 
 			var params = "";
 			params += opt.query("sni", dom_prefix + "tls_serverName");
+			params += opt.query("disable_sni", dom_prefix + "tls_disable_sni");
 			params += opt.query("alpn", dom_prefix + "tuic_alpn");
 			params += opt.query("congestion_control", dom_prefix + "tuic_congestion_control");
 			params += opt.query("udp_relay_mode", dom_prefix + "tuic_udp_relay_mode");
@@ -669,6 +677,31 @@ local current_node = map:get(section)
 				params += opt.query("alpn", dom_prefix + "alpn");
 				params += opt.query("sni", dom_prefix + "tls_serverName");
 				params += opt.query("allowinsecure", dom_prefix + "tls_allowInsecure");
+			}
+
+			params += "#" + encodeURI(v_alias.value);
+			if (params[0] == "&") {
+				params = params.substring(1);
+			}
+			url += params;
+		} else if (v_type === "sing-box" && opt.get(dom_prefix + "protocol").value === "naive") {
+			protocol = "naive+https";
+			var v_username = opt.get(dom_prefix + "username");
+			var v_password = opt.get(dom_prefix + "password");
+			var v_port = opt.get(dom_prefix + "port");
+			url = encodeURIComponent(v_username.value) +
+				":" + encodeURIComponent(v_password.value) +
+				"@" + _address +
+				":" + v_port.value + "?";
+
+			var params = "security=tls";
+			params += opt.query("sni", dom_prefix + "tls_serverName");
+			params += opt.query("insecure-concurrency", dom_prefix + "naive_insecure_concurrency");
+			params += opt.query("ech", dom_prefix + "ech_config");
+			params += opt.query("uot", dom_prefix + "uot");
+			if (opt.get(dom_prefix + "naive_quic")?.checked) {
+				protocol = "naive+quic";
+				params += opt.query("congestion_control", dom_prefix + "naive_congestion_control");
 			}
 
 			params += "#" + encodeURI(v_alias.value);
@@ -1133,6 +1166,8 @@ local current_node = map:get(section)
 				}
 
 				opt.set(dom_prefix + 'uot', queryParam.udp);
+				opt.set(dom_prefix + 'use_finalmask', !!queryParam.fm);
+				opt.set(dom_prefix + 'finalmask', queryParam.fm || "");
 			
 				if (queryParam["shadow-tls"]) {
 					//解析SS Shadow-TLS 插件参数
@@ -1293,6 +1328,8 @@ local current_node = map:get(section)
 			}
 
 			opt.set(dom_prefix + 'tcp_fast_open', queryParam.tfo);
+			opt.set(dom_prefix + 'use_finalmask', !!queryParam.fm);
+			opt.set(dom_prefix + 'finalmask', queryParam.fm || "");
 
 			if (m.hash) {
 				opt.set('remarks', decodeURIComponent(m.hash.substr(1)));
@@ -1388,8 +1425,9 @@ local current_node = map:get(section)
 			} else if (ssm.net === "grpc") {
 				opt.set(dom_prefix + 'grpc_serviceName', ssm.path);
 			}
-
 			opt.set(dom_prefix + 'tcp_fast_open', ssm.tfo);
+			opt.set(dom_prefix + 'use_finalmask', !!ssm.fm);
+			opt.set(dom_prefix + 'finalmask', ssm.fm || "");
 		}
 		if (ssu[0] === "vless") {
 			if (vless_type == "sing-box" && has_singbox) {
@@ -1542,6 +1580,8 @@ local current_node = map:get(section)
 			}
 
 			opt.set(dom_prefix + 'tcp_fast_open', queryParam.tfo);
+			opt.set(dom_prefix + 'use_finalmask', !!queryParam.fm);
+			opt.set(dom_prefix + 'finalmask', queryParam.fm || "");
 
 			if (m.hash) {
 				opt.set('remarks', decodeURIComponent(m.hash.substr(1)));
@@ -1576,6 +1616,8 @@ local current_node = map:get(section)
 					opt.set(dom_prefix + 'hysteria2_obfs_password', queryParam["obfs-password"] || queryParam["obfs_password"]);
 				}
 				opt.set(dom_prefix + 'hysteria2_hop', queryParam.mport || "");
+				opt.set(dom_prefix + 'use_finalmask', !!queryParam.fm);
+				opt.set(dom_prefix + 'finalmask', queryParam.fm || "");
 			} else if (has_hysteria2) {
 				opt.set('type', "Hysteria2");
 				dom_prefix = "hysteria2_"
@@ -1615,6 +1657,14 @@ local current_node = map:get(section)
 			var port = _parsedUrl.port;
 			var search = _parsedUrl.search;
 			var hash = _parsedUrl.hash;
+			if (!username || !password) {  //修正某些链接会把uuid和password之间的:进行编码
+				const decoded = decodeURIComponent(username || password || "");
+				const i = decoded.indexOf(":");
+				if (i > -1) {
+					username = decoded.slice(0, i);
+					password = decoded.slice(i + 1);
+				}
+			}
 			opt.set(dom_prefix + 'uuid', decodeURIComponent(username));
 			opt.set(dom_prefix + 'password', decodeURIComponent(password));
 			opt.set(dom_prefix + 'address', unbracketIP(hostname));
@@ -1634,6 +1684,7 @@ local current_node = map:get(section)
 			opt.set(dom_prefix + 'tuic_udp_relay_mode', queryParam.udp_relay_mode || 'native');
 			opt.set(dom_prefix + 'tuic_alpn', queryParam.alpn || 'default');
 			opt.set(dom_prefix + 'tls_serverName', queryParam.sni || '');
+			opt.set(dom_prefix + 'tls_disable_sni', queryParam.disable_sni === "1");
 			opt.set(dom_prefix + 'tls_allowInsecure', true);
 			if ((queryParam.allowinsecure ?? '0') === '0' && (queryParam.insecure ?? '0') === '0') {
 				opt.set(dom_prefix + 'tls_allowInsecure', false);
@@ -1701,6 +1752,55 @@ local current_node = map:get(section)
 			}
 			if (m.hash) {
 				opt.set('remarks', decodeURIComponent(m.hash.substr(1)));
+			}
+		}
+		if (ssu[0] === "naive+https" || ssu[0] === "naive+quic") {
+			if (has_singbox) {
+				dom_prefix = "singbox_"
+				opt.set('type', "sing-box");
+			}
+			opt.set(dom_prefix + 'protocol', "naive");
+			var _parsedUrl = new URL("http://" + ssu[1]);
+			var username = _parsedUrl.username;
+			var password = _parsedUrl.password;
+			var hostname = _parsedUrl.hostname;
+			var port = _parsedUrl.port;
+			var search = _parsedUrl.search;
+			var hash = _parsedUrl.hash;
+			if (!username || !password) {  //某些链接会把username和password之间的:进行编码
+				const decoded = decodeURIComponent(username || password || "");
+				const i = decoded.indexOf(":");
+				if (i > -1) {
+					username = decoded.slice(0, i);
+					password = decoded.slice(i + 1);
+				}
+			}
+			opt.set(dom_prefix + 'username', decodeURIComponent(username));
+			opt.set(dom_prefix + 'password', decodeURIComponent(password));
+			opt.set(dom_prefix + 'address', unbracketIP(hostname));
+			opt.set(dom_prefix + 'port', port || "443");
+			var queryParam = {};
+			if (search.length > 1) {
+				var query = search.split('?')
+				var queryParams = query[1];
+				var queryArray = queryParams.split('&');
+				var params;
+				for (i = 0; i < queryArray.length; i++) {
+					params = queryArray[i].split('=');
+					queryParam[decodeURIComponent(params[0])] = decodeURIComponent(params[1] || '');
+				}
+			}
+			opt.set(dom_prefix + 'naive_insecure_concurrency', queryParam['insecure-concurrency'] || '0');
+			opt.set(dom_prefix + 'uot', (queryParam.uot ?? '0') === '1');
+			opt.set(dom_prefix + 'tls_serverName', queryParam.sni || '');
+			opt.set(dom_prefix + 'ech', !!queryParam.ech);
+			opt.set(dom_prefix + 'ech_config', queryParam.ech || '');
+			if (ssu[0] === "naive+quic") {
+				opt.set(dom_prefix + 'naive_quic', true);
+				opt.set(dom_prefix + 'naive_congestion_control', queryParam.congestion_control || 'bbr');
+			}
+			if (hash) {
+				opt.set('remarks', decodeURIComponent(hash.substr(1)));
 			}
 		}
 		if (dom_prefix && dom_prefix != null) {
