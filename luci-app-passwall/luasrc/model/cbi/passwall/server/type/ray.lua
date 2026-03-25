@@ -24,8 +24,6 @@ local header_type_list = {
 	"none", "srtp", "utp", "wechat-video", "dtls", "wireguard", "dns"
 }
 
-local xray_version = api.get_app_version("xray")
-
 -- [[ Xray ]]
 
 s.fields["type"]:value(type_name, "Xray")
@@ -39,9 +37,7 @@ o:value("http", "HTTP")
 o:value("socks", "Socks")
 o:value("shadowsocks", "Shadowsocks")
 o:value("trojan", "Trojan")
-if api.compare_versions(xray_version, ">=", "26.1.13") then
-	o:value("hysteria2", translate("Hysteria2"))
-end
+o:value("hysteria2", translate("Hysteria2"))
 o:value("dokodemo-door", "dokodemo-door")
 o:depends({ [_n("custom")] = false })
 
@@ -127,7 +123,11 @@ o:value("", translate("Disable"))
 o:value("xtls-rprx-vision")
 o:depends({ [_n("protocol")] = "vless" })
 
----- [[hysteria2]]
+---- [[ hysteria2 ]]
+o = s:option(Value, _n("hysteria2_auth_password"), translate("Auth Password"))
+o.password = true
+o:depends({ [_n("protocol")] = "hysteria2"})
+
 o = s:option(Flag, _n("hysteria2_ignore_client_bandwidth"), translate("Client BBR Flow Control"))
 o.default = 0
 o:depends({ [_n("protocol")] = "hysteria2" })
@@ -146,10 +146,7 @@ o:depends({ [_n("protocol")] = "hysteria2" })
 o = s:option(Value, _n("hysteria2_obfs_password"), translate("Obfs Password"))
 o:depends({ [_n("hysteria2_obfs_type")] = "salamander" })
 
-o = s:option(Value, _n("hysteria2_auth_password"), translate("Auth Password"))
-o.password = true
-o:depends({ [_n("protocol")] = "hysteria2"})
-
+---- [[ TLS ]]
 o = s:option(Flag, _n("tls"), translate("TLS"))
 o.default = 0
 o.validate = function(self, value, t)

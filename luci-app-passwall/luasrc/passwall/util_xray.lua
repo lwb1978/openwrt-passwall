@@ -622,7 +622,7 @@ function gen_config_server(node)
 						version = 2
 					} or nil,
 					finalmask = (function()
-						local finalmask
+						local finalmask = {}
 						if node.transport == "mkcp" then
 							local map = {none = "none", srtp = "header-srtp", utp = "header-utp", ["wechat-video"] = "header-wechat",
 								dtls = "header-dtls", wireguard = "header-wireguard", dns = "header-dns"}
@@ -639,9 +639,8 @@ function gen_config_server(node)
 								c.settings = { password = node.mkcp_seed }
 							end
 							udp[#udp+1] = c
-							finalmask = { udp = udp }
+							finalmask.udp = udp
 						elseif node.transport == "hysteria" then
-							finalmask = finalmask or {}
 							if node.hysteria2_obfs_type and node.hysteria2_obfs_type ~= "" then
 								finalmask.udp = {{
 									type = node.hysteria2_obfs_type,
@@ -650,39 +649,22 @@ function gen_config_server(node)
 									} or nil
 								}}
 							end
-							finalmask.quicParams = finalmask.quicParams or {}
-							if node.hysteria2_ignore_client_bandwidth == "1" then
-								finalmask.quicParams.congestion = "bbr"
-							else
-								local up_mbps = (node.hysteria2_up_mbps and tonumber(node.hysteria2_up_mbps) or 0) > 0  and tonumber(node.hysteria2_up_mbps) or nil
-								local down_mbps = (node.hysteria2_down_mbps and tonumber(node.hysteria2_down_mbps) or 0) > 0 and tonumber(node.hysteria2_down_mbps) or nil
-								finalmask.quicParams.congestion = (up_mbps and down_mbps) and "brutal" or nil
-								finalmask.quicParams.brutalUp = up_mbps and up_mbps .. "mbps" or nil
-								finalmask.quicParams.brutalDown = down_mbps and down_mbps .. "mbps" or nil
-							end
+							local ignore = tonumber(node.hysteria2_ignore_client_bandwidth) == 1
+							local up = (not ignore) and tonumber(node.hysteria2_up_mbps) or 0
+							local down = (not ignore) and tonumber(node.hysteria2_down_mbps) or 0
+							finalmask.quicParams = {
+								congestion = (up <= 0 and down <= 0) and "bbr" or "brutal",
+								brutalUp = up > 0 and (up .. "mbps") or nil,
+								brutalDown = down > 0 and (down .. "mbps") or nil
+							}
 						end
 						if node.finalmask and node.finalmask ~= "" then
 							local ok, fm = pcall(jsonc.parse, api.base64Decode(node.finalmask))
 							if ok and type(fm) == "table" then
-								if not finalmask or not next(finalmask) then
-									finalmask = fm
-								else
-									if type(fm.udp) == "table" then
-										finalmask.udp = finalmask.udp or {}
-										for i = 1, #fm.udp do
-											finalmask.udp[#finalmask.udp+1] = fm.udp[i]
-										end
-									end
-									if type(fm.tcp) == "table" then
-										finalmask.tcp = fm.tcp
-									end
-									if type(fm.quicParams) == "table" then
-										finalmask.quicParams = fm.quicParams
-									end
-								end
+								finalmask = fm
 							end
 						end
-						return (finalmask and next(finalmask)) and finalmask or nil
+						return api.cleanEmptyTables(finalmask)
 					end)(),
 					sockopt = {
 						tcpFastOpen = (node.tcp_fast_open == "1") and true or nil,
