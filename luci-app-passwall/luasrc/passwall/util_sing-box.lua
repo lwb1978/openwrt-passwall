@@ -600,6 +600,7 @@ function gen_outbound(flag, node, tag, proxy_table)
 						realm.scheme = nil
 						realm.address = nil
 						realm.port = nil
+						realm.port_mapping = (node.hysteria2_realm_portMapping == "1") and { enabled = true } or nil
 						return realm
 					end
 					return nil
@@ -964,6 +965,7 @@ function gen_config_server(node)
 					realm.address = nil
 					realm.port = nil
 					realm.stun_domain_resolver = "direct"
+					realm.port_mapping = (node.hysteria2_realm_portMapping == "1") and { enabled = true } or nil
 					return realm
 				end
 				return nil

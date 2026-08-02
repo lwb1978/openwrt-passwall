@@ -61,6 +61,11 @@ o.default = { "stun.sip.us:3478", "stun.nextcloud.com:3478", "global.stun.twilio
 o.rewrite_option = o.option
 o:depends({ [_n("realms")] = "1" })
 
+o = s:option(Flag, _n("realm_portMapping"), translate("Enable") .. " UPnP/NAT-PMP", translate("Enable UPnP/NAT-PMP port mapping on your gateway to improve hole punching success."))
+o.default = "0"
+o.rewrite_option = o.option
+o:depends({ [_n("realms")] = "1" })
+
 o = s:option(Value, _n("auth_password"), translate("Auth Password"))
 o.password = true
 o.rewrite_option = o.option
