@@ -132,6 +132,19 @@ o.validate = function(self, value, t)
 end
 o:depends({ [_n("custom")] = false })
 
+o = s:option(FileUpload, _n("ech_keyFile"), translate("ECH key absolute path"), translate("as:") .. "/etc/ssl/ech.pem")
+o.validate = function(self, value, t)
+	if value and value ~= "" then
+		if not fs.access(value) then
+			return nil, translate("Can't find this file!")
+		else
+			return value
+		end
+	end
+	return nil
+end
+o:depends({ [_n("custom")] = false })
+
 o = s:option(TextValue, _n("custom_config"), translate("Custom Config"))
 o.rows = 10
 o.wrap = "off"
