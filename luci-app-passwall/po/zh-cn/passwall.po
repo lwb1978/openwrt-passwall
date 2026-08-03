@@ -1610,6 +1610,9 @@ msgstr "公钥文件绝对路径"
 msgid "Private key absolute path"
 msgstr "私钥文件绝对路径"
 
+msgid "ECH key absolute path"
+msgstr "ECH 密钥绝对路径"
+
 msgid "Can't find this file!"
 msgstr "找不到这个文件！"
 
